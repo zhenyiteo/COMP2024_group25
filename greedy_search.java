@@ -92,40 +92,61 @@ public class TSPGreedy {
 
 
     }
-
     public static void main(String[] args) {
         String fileName = "C:/Users/zheny/Desktop/AIM Coursework/TSP_107.txt";
-        int numStartingPoints = 1000000; // number of random starting points to try
+        int numStartingPoints = 1; // number of random starting points to try
         double shortestDist = Double.MAX_VALUE;
         City[] shortestPath = null;
+        long startTime = System.nanoTime();
 
         try {
             City[] cities = readCitiesFromFile(fileName);
 
-            for (int i = 0; i < numStartingPoints; i++) {
-                // Randomly select a starting point
-                int startIdx = (int) (Math.random() * cities.length);
-                City[] path = greedyTSPFromStart(cities, startIdx);
+            for (int j = 0; j < 1000000; j++) { // run the program 30 times
+                for (int i = 0; i < numStartingPoints; i++) {
+                    // Randomly select a starting point
+                    int startIdx = (int) (Math.random() * cities.length);
+                    City[] path = greedyTSPFromStart(cities, startIdx);
 
-                // Calculate total distance of the path
-                double totalDist = totalDistance(path);
+                    // Calculate total distance of the path
+                    double totalDist = totalDistance(path);
 
-                // Update shortest path and distance if necessary
-                if (totalDist < shortestDist) {
-                    shortestDist = totalDist;
-                    shortestPath = path;
+                    // Update shortest path and distance if necessary
+                    if (totalDist < shortestDist) {
+                        shortestDist = totalDist;
+                        shortestPath = path;
+                    }
                 }
+
+                System.out.print("Shortest path for run " + (j+1) + ": ");
+                for (City city : shortestPath) {
+                    System.out.print(city.node + " ");
+                }
+                System.out.println("\nTotal distance for run " + (j+1) + ": " + shortestDist);
+
+                shortestDist = Double.MAX_VALUE; // reset the shortest distance and path
+                shortestPath = null;
             }
 
-            System.out.println("Shortest path:");
-            for (City city : shortestPath) {
-                System.out.println(city.node);
+            // Print shortest path overall
+            System.out.print("Shortest path overall: ");
+            if (shortestPath == null) {
+                shortestPath = greedyTSPFromStart(cities, 0);
             }
-            System.out.println("Total distance: " + shortestDist);
+            for (City city : shortestPath) {
+                System.out.print(city.node + " ");
+            }
+            System.out.println("\nTotal distance overall: " + totalDistance(shortestPath));
 
         } catch (IOException e) {
             System.err.println("Error reading file: " + e.getMessage());
         }
+        
+        // Print the runtime of the program
+        long endTime = System.nanoTime();
+        long runtime = (endTime - startTime) / 1000000; // convert nanoseconds to milliseconds
+        System.out.println("Program runtime: " + runtime + " ms");
 
     }
+    
 }
