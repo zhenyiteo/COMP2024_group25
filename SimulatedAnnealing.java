@@ -19,6 +19,11 @@ class City {
     float distanceTo(City city) {
         return (float)Math.sqrt(Math.pow(city.x - this.x, 2) + Math.pow(city.y - this.y, 2));
     }
+
+    @Override
+    public String toString() {
+        return "" + index;
+    }
 }
 public class SimulatedAnnealing {
 
@@ -30,63 +35,13 @@ public class SimulatedAnnealing {
 
     public static void main(String[] args) {
 
-        setInitialTemperature(100000);
-
-        setCoolingRate(0.003);
-
         cities = (ArrayList<City>) loadCities(); // Load the city coordinates here
 
         numberOfCities = cities.size();
 
-        Solution currentSolution = new Solution();
-        currentSolution.generateIndividual();
-
-        System.out.println("Total distance of initial solution: " + currentSolution.getTotalDistance());
-        System.out.println("Solution: " + currentSolution);
-
-        Solution best = new Solution(currentSolution.getSolution());
-
         // Loop until system has cooled
-        while (temp > 1) {
-            // Create new neighbour solution
-            Solution newSolution = new Solution(currentSolution.getSolution());
+        run(30);
 
-            // Get random positions in the solution
-            int solutionPos1 = randomInt(0 , newSolution.solutionSize());
-            int solutionPos2 = randomInt(0 , newSolution.solutionSize());
-
-            //to make sure that solutionPos1 and solutionPos2 are different
-            while(solutionPos1 == solutionPos2) {solutionPos2 = randomInt(0 , newSolution.solutionSize());}
-
-            // Get the cities at selected positions in the solution
-            City citySwap1 = newSolution.getCity(solutionPos1);
-            City citySwap2 = newSolution.getCity(solutionPos2);
-
-            // Swap them
-            newSolution.setCity(solutionPos2, citySwap1);
-            newSolution.setCity(solutionPos1, citySwap2);
-
-            // Get energy of solutions
-            int currentDistance   = currentSolution.getTotalDistance();
-            int neighbourDistance = newSolution.getTotalDistance();
-
-            // Decide if we should accept the neighbour
-            double rand = r.nextInt(1000) / 1000.0;
-            if (acceptanceProbability(currentDistance, neighbourDistance) > rand) {
-                currentSolution = new Solution(newSolution.getSolution());
-            }
-
-            // Keep track of the best solution found
-            if (currentSolution.getTotalDistance() < best.getTotalDistance()) {
-                best = new Solution(currentSolution.getSolution());
-            }
-
-            // Cool system
-            temp *= 1 - coolingRate;
-        }
-
-        System.out.println("Final solution distance: " + best.getTotalDistance());
-        System.out.println("Solution: " + best);
     }
 
     private static List<City> loadCities() {
@@ -133,7 +88,94 @@ public class SimulatedAnnealing {
     public static City getCity(int index){
         return cities.get(index);
     }
+
+    public static void run(int n){
+        long totalTime = 0;
+        long totalDistance = 0;
+        Solution overallBest = new Solution();
+        for(int i = 0; i < n; i++){
+            long startTime;
+
+            startTime = System.currentTimeMillis();
+
+            setInitialTemperature(100000);
+            setCoolingRate(0.00001);
+
+            Solution currentSolution = new Solution();
+            currentSolution.generateIndividual();
+
+            System.out.println("Total distance of initial solution: " + currentSolution.getTotalDistance());
+            System.out.println("Solution: " + currentSolution);
+
+            Solution best = new Solution(currentSolution.getSolution());
+
+            if (i == 0)
+                overallBest = best;
+
+            while (temp > 1) {
+                // Create new neighbour solution
+                Solution newSolution = new Solution(currentSolution.getSolution());
+
+                // Get random positions in the solution
+                int solutionPos1 = randomInt(0, newSolution.solutionSize());
+                int solutionPos2 = randomInt(0, newSolution.solutionSize());
+
+                //to make sure that solutionPos1 and solutionPos2 are different
+                while (solutionPos1 == solutionPos2) {
+                    solutionPos2 = randomInt(0, newSolution.solutionSize());
+                }
+
+                // Get the cities at selected positions in the solution
+                City citySwap1 = newSolution.getCity(solutionPos1);
+                City citySwap2 = newSolution.getCity(solutionPos2);
+
+                // Swap them
+                newSolution.setCity(solutionPos2, citySwap1);
+                newSolution.setCity(solutionPos1, citySwap2);
+
+                // Get energy of solutions
+                int currentDistance = currentSolution.getTotalDistance();
+                int neighbourDistance = newSolution.getTotalDistance();
+
+                // Decide if we should accept the neighbour
+                double rand = r.nextInt(1000) / 1000.0;
+                if (acceptanceProbability(currentDistance, neighbourDistance) > rand) {
+                    currentSolution = new Solution(newSolution.getSolution());
+                }
+
+                // Keep track of the best solution found
+                if (currentSolution.getTotalDistance() < best.getTotalDistance()) {
+                    best = new Solution(currentSolution.getSolution());
+                }
+
+                // Cool system
+                temp *= 1 - coolingRate;
+            }
+
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            System.out.println("Time taken: " + duration + "ms");
+            System.out.println("Final solution distance: " + best.getTotalDistance());
+            System.out.println("Solution: " + best + "\n");
+            totalTime += duration;
+
+            if (best.getTotalDistance() < overallBest.getTotalDistance()) {
+                overallBest = new Solution(best.getSolution());
+            }
+
+            totalDistance += best.getTotalDistance();
+
+        }
+        long averageTime = totalTime / n;
+        long averageDistance = totalDistance / n;
+        System.out.println("Average Time Taken: " + averageTime + "ms");
+        System.out.println("Total Time Taken: " + totalTime + "ms");
+        System.out.println("Best Solution: " + overallBest);
+        System.out.println("Average Distance: " + averageDistance);
+    }
 }
+
+
 
 class Solution{
 
@@ -238,8 +280,10 @@ class Solution{
     public String toString() {
         StringBuilder s = Optional.ofNullable(getCity(0).toString()).map(StringBuilder::new).orElse(null);
         for (int i = 1; i < solutionSize(); i++) {
-            s = (s == null ? new StringBuilder("null") : s).append(" -> ").append(getCity(i).toString());
+            s = (s == null ? new StringBuilder("null") : s).append(",").append(getCity(i).toString());
         }
+        s = (s == null ? new StringBuilder("null") : s).append(",").append(getCity(0).toString());
         return s == null ? null : s.toString();
     }
+
 }
